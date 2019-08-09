@@ -2,7 +2,7 @@
 
 First of all: you're cool! 😎
 
-Development of qaul.net happens mostly on [github](https://github.com/qaul)
+Development of qaul.net happens mostly on [our own gitlab](https://git.open-communication.net/qaul)
 with an open development & support chat on [zulip](https://qaul.zulipchat.com).
 If you have any questions getting started, please come by!
 

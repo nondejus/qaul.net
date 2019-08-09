@@ -2,7 +2,7 @@
 
 **This document is about the editing, translating and building the qaul.net public web site which is availabe under [https://qaul.net]**
 
-The [qaul.net] web site is built via the static site generator [HUGO]. Its content and sources are hosted in a [github repository] and are community editable.
+The [qaul.net] web site is built via the static site generator [HUGO]. Its content and sources are hosted in a [gitlab repository] and are community editable.
 
 Your welcome to update, translate, [open a PR] or [send us a patch]!
 
@@ -24,10 +24,10 @@ hugo version
 
 ### Get the Web Site Sources 
 
-Clone or download the [github repository] of the web site. All needed files (templates, content, images) are in this repository.
+Clone or download the [gitlab repository] of the web site. All needed files (templates, content, images) are in this repository.
 
 ```bash
-git clone https://github.com/qaul/qaul-website.git
+git clone https://gitlab.com/qaul/qaul-website.git
 ```
 
 
@@ -66,6 +66,6 @@ For translating the web site see the chapter [Translate the qaul.net Web Site](/
 [https://qaul.net]: https://qaul.net
 [qaul.net]: https://qaul.net
 [HUGO]: https://gohugo.io/
-[github repository]: https://github.com/qaul.net/qaul-website/
+[gitlab repository]: https://git.open-communicationnet/qaul.net/qaul-website/
 [open a PR]: /social/contributions.html#submitting-a-pr
 [send us a patch]: /social/contributions.html#submitting-an-e-mail-patch
