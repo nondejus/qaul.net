@@ -14,6 +14,7 @@
 		- [HTTP](./technical/api/http/_intro.md)
     - [`libqaul`](./technical/libqaul/_intro.md)
     - [Web GUI](./technical/webgui/_intro.md)
+      - [Install EmberJS & Test Web GUI](./technical/webgui/install.md)
 - [Translations](./translations/_intro.md)
 - [Design](./design/_intro.md)
 - [qaul.net Web Site](./web-site/_intro.md)
