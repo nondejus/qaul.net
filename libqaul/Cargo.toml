@@ -8,6 +8,7 @@ edition = "2018"
 [dependencies]
 platform = { path = "platform", package = "qaul-platform" }
 identity = { path = "../ratman/identity", package = "ratman-identity" }
+alexandria = { git = "https://git.open-communication.net/spacekookie/alexandria" }
 
 rand = "0.7"
 base64 = "0.10"
