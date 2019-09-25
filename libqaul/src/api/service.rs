@@ -1,10 +1,7 @@
 //! Defines a basic interface for a Qaul service
 
 use super::models::Message;
-use std::{
-    any::{Any, TypeId},
-    collection::HashMap,
-};
+use std::any::Any;
 
 pub trait Service: Any {
     fn receive_message(&self, message: Message);

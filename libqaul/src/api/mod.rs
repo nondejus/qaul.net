@@ -22,10 +22,15 @@
 //! developers to interact with, not including
 //! shared service state or secrets.
 
-use std::collections::BTreeMap;
+use std::{
+    any::{Any, TypeId},
+    collections::BTreeMap,
+    sync::Arc,
+};
 
 mod models;
 mod service;
+pub use service::{Service, ServiceName, InterserviceMessenger};
 pub use models::{Message, QaulError, QaulResult, SigTrust, UserAuth};
 
 use crate::Qaul;
@@ -267,13 +272,52 @@ impl Qaul {
         unimplemented!()
     }
 
-    /// Register a new service with this `qaul` instance
+    /// Send a message to another service
+    pub fn send_ism<S: ServiceName + InterserviceMessenger>(&self, message: S::Input) 
+    -> QaulResult<S::Output> {
+        let s = {
+            if let Some(s) = self.services.lock().unwrap().get(&S::name()) {
+                s.clone()
+            } else {
+                return Err(QaulError::InvalidQuery);
+            }
+        };
+        if s.type_id() != TypeId::of::<S>() { return Err(QaulError::InvalidQuery); }
+        let s : &S = unsafe { std::mem::transmute(
+                s.as_ref().as_ref() as *const Service as *const ()) };
+        Ok(s.receive_ism(message))
+    }
+
+    /// Register a service for the given user.
     ///
     /// Internally this function dispatches a query to a UI service
     /// (marked "primary" to allow the user to either verify or
     /// deny the registration request).
-    pub fn service_register(&self, user: UserAuth, service_id: String) -> QaulResult<()> {
+    pub fn service_register(&self, user: UserAuth, service: String) -> QaulResult<()> {
+        if self.services.lock().unwrap().get(&service).is_none() { 
+            return Err(QaulError::InvalidQuery);
+        }
+        self.user_update(user, UserUpdate::AddService(service))?;
         Ok(())
+    }
+
+    /// Unregister a service for the given user.
+    pub fn service_unregister(&self, user: UserAuth, service: String) -> QaulResult<()> {
+        self.user_update(user, UserUpdate::RemoveService(service))?;
+        Ok(())
+    }
+
+    /// Loads a service into qaul
+    ///
+    /// This will run the service's loading routines and may not be side-effect free,
+    /// but the service will not be given any user data until registed.
+    pub fn load_service<S: Service + ServiceName + 'static>(&self, service: S) {
+        self.services.lock().unwrap().insert(S::name(), Arc::new(Box::new(service)));
+    }
+
+    /// Unloads a service from qaul
+    pub fn unload_service(&self, service: String) {
+        self.services.lock().unwrap().remove(&service);
     }
 }
 

@@ -47,6 +47,7 @@ pub struct Qaul {
     auth: Arc<Mutex<BTreeMap<Identity, String>>>,
     keys: Arc<Mutex<BTreeMap<String, Identity>>>,
     contacts: Arc<Mutex<BTreeMap<Identity, ContactBook>>>,
+    services: Arc<Mutex<BTreeMap<String, Arc<Box<dyn Service + 'static>>>>>
 }
 
 impl Qaul {
@@ -56,6 +57,7 @@ impl Qaul {
             auth: Arc::new(Mutex::new(BTreeMap::new())),
             keys: Arc::new(Mutex::new(BTreeMap::new())),
             contacts: Arc::new(Mutex::new(BTreeMap::new())),
+            services: Arc::new(Mutex::new(BTreeMap::new())),
         }
     }
 }
