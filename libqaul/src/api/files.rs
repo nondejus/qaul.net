@@ -5,17 +5,20 @@
 //! users namespace.
 
 use super::models::{File, FileMeta, FileFilter, UserAuth};
-use crate::{Qaul, QaulResult, User};
+use crate::{Qaul, QaulResult};
 
 impl Qaul {
     /// Query available files to a user
     ///
     /// Optionally: use the `filter` parameter to exclude certain
     /// types of files, based on the lifecycle in the system.
-    pub fn files_query(
+    pub fn files_query<T>(
         user: UserAuth,
         filter: Option<FileFilter>,
-    ) -> QaulResult<impl Iterator<Item = FileMeta>> {
+    ) -> QaulResult<T>
+    where
+         T: Iterator<Item = FileMeta>
+    {
         unimplemented!()
     }
 
