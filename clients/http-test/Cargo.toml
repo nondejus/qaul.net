@@ -5,5 +5,5 @@ authors = ["Katharina Fey <kookie@spacekookie.de>"]
 edition = "2018"
 
 [dependencies]
-qaul-http = { path = "../../libqaul/http-api" }
+libqaul-http = { path = "../../libqaul/http-api" }
 libqaul = { path = "../../libqaul" }

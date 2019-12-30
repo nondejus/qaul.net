@@ -1,5 +1,5 @@
 use libqaul::*;
-use qaul_http::*;
+use libqaul_http::*;
 
 fn main() {
     let qaul = Qaul::start();
