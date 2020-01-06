@@ -7,3 +7,4 @@ edition = "2018"
 [dependencies]
 libqaul-http = { path = "../../libqaul/http-api" }
 libqaul = { path = "../../libqaul" }
+ratman = { path = "../../ratman" }
