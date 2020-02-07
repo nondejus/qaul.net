@@ -1,9 +1,33 @@
 use async_std::sync::Arc;
 use netmod::Endpoint;
-use std::sync::atomic::{AtomicUsize, Ordering};
+use std::ops::{Deref, DerefMut};
+use std::sync::{Mutex, MutexGuard, RwLock};
 
 type Ep = dyn Endpoint + 'static + Send + Sync;
-type EpVec = Vec<Box<Ep>>;
+
+/// A mutable reference to a driver in the DriverMap.
+pub struct DriverRef<'a> {
+    inner: MutexGuard<'a, Box<Ep>>,
+}
+
+impl<'a> From<MutexGuard<'a, Box<Ep>>> for DriverRef<'a> {
+    fn from(guard: MutexGuard<'a, Box<Ep>>) -> DriverRef<'a> {
+        DriverRef { inner: guard }
+    }
+}
+
+impl Deref for DriverRef<'_> {
+    type Target = Ep;
+    fn deref(&self) -> &Ep {
+        &(**self.inner)
+    }
+}
+
+impl DerefMut for DriverRef<'_> {
+    fn deref_mut(&mut self) -> &mut Ep {
+        &mut (**self.inner)
+    }
+}
 
 /// A map of available endpoint drivers
 ///
@@ -12,8 +36,7 @@ type EpVec = Vec<Box<Ep>>;
 /// unique IDs.
 #[derive(Default)]
 pub(crate) struct DriverMap {
-    curr: AtomicUsize,
-    map: EpVec,
+    map: RwLock<Vec<Mutex<Box<Ep>>>>,
 }
 
 impl DriverMap {
@@ -23,48 +46,41 @@ impl DriverMap {
 
     /// Get the length of the driver set
     pub(crate) fn len(&self) -> usize {
-        self.curr.load(Ordering::Relaxed)
+        self.map.read().expect("DriverMap RwLock poisoned").len()
     }
 
     /// Insert a new endpoint to the set of known endpoints
-    ///
-    /// This function comes with some caveats.  To avoid the overhead
-    /// of blocking on a mutex (both code and speed overhead), we
-    /// store each endpoint in a vec that is sequentially addressed.
-    /// An endpoint can't be removed from the list.
-    ///
-    /// The reason we do this is that we can spawn a future for each
-    /// endpoint that will keep polling it's respective socket for
-    /// packets, without having to share the entire structure as
-    /// mutable or locking an endpoint when we know that we're the
-    /// only ones with access.
-    ///
-    /// Now: this does mean that a send and receive call can be run at
-    /// the same time, meanining that the endpoint needs to implement
-    /// Sync, which we are enforcing with the trait bounds.
-    ///
-    /// Some thoughts about this: maybe there's a way to use
-    /// UnsafeCell, which is slightly less gross than doing a mut
-    /// transmute?  It's not sync though, so there's a bunch of
-    /// overhead there which really defeats the point.  On the other
-    /// hand, maybe we don't even need this collection.  We could have
-    /// a handler here that can spawn tasks for an endpoint, meaning
-    /// we never have to yield references to poll.. food for thought!
-    #[allow(mutable_transmutes)]
-    pub(crate) unsafe fn add<E>(&self, ep: E)
+    pub(crate) fn add<E>(&self, ep: E)
     where
         E: Endpoint + 'static + Send + Sync,
     {
-        let map: &mut EpVec = std::mem::transmute(&self.map);
-        let curr = self.curr.fetch_add(1, Ordering::Relaxed);
-        map[curr + 1] = Box::new(ep);
+        self.map
+            .write()
+            .expect("DriverMap RwLock poisoned")
+            .push(Mutex::new(Box::new(ep)));
     }
 
-    /// Get raw mutable access to an endpoint (see `add` for more)
-    #[allow(mutable_transmutes)]
-    pub(crate) unsafe fn get_mut(&self, id: usize) -> &mut Ep {
-        let map: &mut EpVec = std::mem::transmute(&self.map);
-        &mut *map[id]
+    /// Remove the endpoint with the given ID and return it, if it exists
+    pub(crate) fn remove(&self, id: usize) -> Option<Box<Ep>> {
+        let map = self.map.write().expect("DriverMap RwLock poisoned");
+        if id < map.len() {
+            Some(
+                map.remove(id)
+                    .into_inner()
+                    .expect("DriverMap Mutex poisoned"),
+            )
+        } else {
+            None
+        }
+    }
+
+    /// Get mutable access to the endpoint with the given ID, if it exists
+    pub(crate) fn get_mut<'a>(&'a self, id: usize) -> Option<DriverRef> {
+        self.map
+            .read()
+            .expect("DriverMap RwLock poisoned")
+            .get(id)
+            .map(|mutex| mutex.lock().expect("DriverMap Mutex poisoned").into())
     }
 
     // Add a new interface with a guaranteed unique ID to the map

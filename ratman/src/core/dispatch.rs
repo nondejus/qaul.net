@@ -24,7 +24,10 @@ impl Dispatch {
             })
             .await;
 
-        let ep: &mut _ = unsafe { self.drivers.get_mut(epid as usize) };
+        let ep = &mut self
+            .drivers
+            .get_mut(epid as usize)
+            .expect(&format!("No driver with the given ID {}", epid));
         ep.send(frame, trgt).await.unwrap();
     }
 
