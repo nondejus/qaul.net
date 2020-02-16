@@ -47,7 +47,7 @@ impl Chat {
 
         use async_std::{
             pin::Pin,
-            poll::{Context, Poll},
+            task::{Context, Poll},
         };
 
         impl Stream for Subscription {

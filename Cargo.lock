@@ -794,6 +794,7 @@ dependencies = [
  "blake2",
  "conjoiner-engine",
  "crossbeam-channel",
+ "futures 0.3.4",
  "hex",
  "mime",
  "rand",
