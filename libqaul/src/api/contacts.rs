@@ -8,7 +8,7 @@ use serde::{Serialize, Deserialize};
 /// specify about another user, that are not available or shared with
 /// the network. This is meant to allow users to curate a list of
 /// trusted contacts, or build friend circles.
-#[derive(Default, Debug, Clone)]
+#[derive(Serialize, Deserialize, Default, Debug, Clone)]
 pub struct ContactEntry {
     /// The name by which the associated contact is known by the owning user.
     pub nick: Option<String>,
@@ -114,7 +114,7 @@ impl<'qaul> Contacts<'qaul> {
     /// let contacts = qaul.contacts();
     /// # (|| -> Result<()> {
     /// contacts
-    ///     .query(user.clone(), ContactQuery::Nick("buddy"))?
+    ///     .query(user.clone(), ContactQuery::Nick("buddy".to_string()))?
     ///     .into_iter()
     ///     .map(|i| contacts.get(user.clone(), &i));
     /// # Ok(())

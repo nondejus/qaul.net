@@ -1,11 +1,10 @@
 use crate::Identity;
-use async_std::{
-    future::Future,
-    pin::Pin,
-    stream::Stream,
-    sync::{channel, Arc, Receiver, Sender},
+use futures::{
+    channel::mpsc::{channel, Sender, Receiver},
     task::{Context, Poll},
+    stream::Stream,
 };
+use std::pin::Pin;
 
 /// A unique, randomly generated subscriber ID
 pub type SubId = Identity;
@@ -34,6 +33,10 @@ impl<T> Stream for Subscription<T> {
     type Item = T;
 
     fn poll_next(mut self: Pin<&mut Self>, ctx: &mut Context<'_>) -> Poll<Option<Self::Item>> {
-        unsafe { Pin::new_unchecked(&mut self.rx.recv()) }.poll(ctx)
+        Pin::new(&mut Pin::into_inner(self).rx).poll_next(ctx)
+    }
+
+    fn size_hint(&self) -> (usize, Option<usize>) {
+        self.rx.size_hint()
     }
 }
