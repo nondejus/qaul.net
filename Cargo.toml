@@ -33,5 +33,6 @@ members = [
     # Client specific targets
     "clients/linux",
     "clients/linux-cli",
+    "clients/linux-daemon",
     # "clients/http-test"
 ]

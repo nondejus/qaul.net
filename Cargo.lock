@@ -1232,6 +1232,16 @@ dependencies = [
 ]
 
 [[package]]
+name = "qauld"
+version = "0.1.0"
+dependencies = [
+ "async-std",
+ "libqaul",
+ "netmod-udp",
+ "ratman",
+]
+
+[[package]]
 name = "quote"
 version = "1.0.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"

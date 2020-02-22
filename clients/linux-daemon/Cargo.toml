@@ -1,0 +1,11 @@
+[package]
+name = "qauld"
+version = "0.1.0"
+authors = ["Leonora Tindall <nora@nora.codes>"]
+edition = "2018"
+
+[dependencies]
+libqaul = { path = "../../libqaul" }
+ratman = { path = "../../ratman" }
+netmod-udp = { path = "../../netmod-udp" }
+async-std = "1.0"
