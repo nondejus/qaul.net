@@ -9,7 +9,9 @@ use async_std::{
 };
 use async_tungstenite::tungstenite::Message;
 use futures::prelude::*;
+use libqaul::Qaul;
 use libqaul_rpc::{Envelope, EnvelopeType, Responder};
+use qaul_chat::Chat;
 use serde_json;
 use std::sync::atomic::{AtomicBool, Ordering};
 
@@ -23,13 +25,11 @@ pub struct WsServer {
 
 impl WsServer {
     /// Create a websocket server with a libqaul instance and services
-    #[cfg(all(feature = "chat", feature = "voice", feature = "files"))]
     pub fn new<S: Into<String>>(addr: S, qaul: Arc<Qaul>, chat: Arc<Chat>) -> Arc<Self> {
         Arc::new(Self {
             running: AtomicBool::from(true),
             addr: addr.into(),
-            qaul,
-            chat,
+            rpc: Responder { qaul, chat },
         })
     }
 
@@ -46,6 +46,21 @@ impl WsServer {
                 }
             }
         });
+    }
+
+    /// Same as `run` but blocks the current thread
+    pub fn block(self: Arc<Self>) {
+        task::block_on(async move {
+            while self.running.load(Ordering::Relaxed) {
+                let socket = TcpListener::bind(&self.addr)
+                    .await
+                    .expect(&format!("Failed to bind; '{}'", &self.addr));
+
+                while let Ok((stream, _)) = socket.accept().await {
+                    task::spawn(Arc::clone(&self).handle(stream));
+                }
+            }
+        })
     }
 
     /// Handle an incoming websocket stream
