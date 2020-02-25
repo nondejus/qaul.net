@@ -1,32 +1,24 @@
 //! Websocket accept server
 
+use crate::env::{RequestEnv, ResponseEnv};
+
 use async_std::{
-    io::{Read, Write},
     net::{TcpListener, TcpStream},
     sync::Arc,
     task,
 };
-use async_tungstenite::{async_std::connect_async, tungstenite::Message};
+use async_tungstenite::tungstenite::Message;
 use futures::prelude::*;
-use std::sync::atomic::{AtomicBool, Ordering};
-
-use crate::env::RequestEnv;
+use libqaul_rpc::{Envelope, EnvelopeType, Responder};
 use serde_json;
-
-use libqaul_rpc::Envelope;
-use libqaul::Qaul;
-
-#[cfg(feature = "chat")]
-use qaul_chat::Chat;
+use std::sync::atomic::{AtomicBool, Ordering};
 
 /// Websocket server structure
 pub struct WsServer {
     running: AtomicBool,
     addr: String,
 
-    qaul: Arc<Qaul>,
-    #[cfg(feature = "chat")]
-    chat: Arc<Chat>,
+    rpc: Responder,
 }
 
 impl WsServer {
@@ -62,15 +54,37 @@ impl WsServer {
             .await
             .expect("Failed ws handshake");
 
-        let mut buf = String::new();
         let (mut tx, mut rx) = ws_stream.split();
 
         // Read messages from this stream
         while let Some(Ok(Message::Text(msg))) = rx.next().await {
-            let je: RequestEnv = serde_json::from_str(&msg).expect("Malformed json envelope");
-            let env: Envelope = je.into();
-            
-            
+            let req_env: RequestEnv = serde_json::from_str(&msg).expect("Malformed json envelope");
+            let Envelope { id, data } = req_env.clone().into();
+
+            let req = match data {
+                EnvelopeType::Request(req) => req,
+                _ => unreachable!(), // Obviously possibly but fuck you
+            };
+
+            // Call into libqaul via the rpc utilities
+            let resp = self.rpc.respond(req).await;
+            let env = Envelope {
+                id,
+                data: EnvelopeType::Response(resp),
+            };
+
+            // Build the reply envelope
+            let resp_env: ResponseEnv = (env, req_env).into();
+            let json = serde_json::to_string(&resp_env).unwrap();
+
+            // Send the reply
+            tx.send(Message::Text(json))
+                .await
+                .expect("Failed to send reply!");
+
+            // Break on server shutdown
+            // The if is here because of a possible rustc bug and does nothing
+            if !self.running.load(Ordering::Relaxed) && break {};
         }
 
         // while let Ok(num) = rx.read_to_string(&mut buf).await {
